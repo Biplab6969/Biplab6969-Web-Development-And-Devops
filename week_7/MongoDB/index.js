@@ -1,7 +1,9 @@
+const bcrypt = require("bcrypt");
 // Import the express, mongoose, and jwt modules
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
+const { z } = require("zod");
 
 // Import the UserModel and TodoModel from the db.js file
 const { UserModel, TodoModel } = require("./db");
@@ -20,16 +22,45 @@ const JWT_SECRET = "hellobacchomajaloclasska";
 
 // Create a POST route for the signup endpoint
 app.post("/signup", async function (req, res) {
+
+    const requiredBody = z.object({
+        email: z.string().min(3).max(100).email(),
+        name: z.string().min(3).max(100),
+        password: z.string().min(3).max(30)
+
+    })
+
+    //const parseData = requiredBody.parse(req.body);
+    const parsedDataWithSucess = requiredBody.safeParse(req.body);
+
+    if(!parsedDataWithSucess.success){
+        res.json({
+            message: "Incorrect format",
+            error: parsedDataWithSucess.error
+        })
+        return
+    }
     // Get the email, password, and name from the request body
     const email = req.body.email;
     const password = req.body.password;
     const name = req.body.name;
 
+    // if(typeof email !== "string" || email.length<5 || !email.includes("@")){
+    //     res.json({
+    //         message: "Email incorrect"
+    //     })
+    //     return
+    // }
+
+    const hashedPassword = await bcrypt.hash(password, 5);
+    console.log(hashedPassword);
+    
+
     try {
         // Create a new user using the UserModel.create() method
         await UserModel.create({
             email: email,
-            password: password,
+            password: hashedPassword,
             name: name,
         });
     } catch (error) {
@@ -53,11 +84,13 @@ app.post("/signin", async function (req, res) {
     // Find the user with the given email and password
     const user = await UserModel.findOne({
         email: email,
-        password: password,
+       // password: password,
     });
 
+    const passwordMatch = bcrypt.compare(password, user.password);
+
     // If the user is found, create a JWT token and send it to the client
-    if (user) {
+    if (passwordMatch) {
         // Create a JWT token using the jwt.sign() method
         const token = jwt.sign(
             {
