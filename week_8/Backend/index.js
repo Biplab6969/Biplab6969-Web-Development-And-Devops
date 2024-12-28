@@ -1,21 +1,21 @@
 const express = require("express");
-
+const mongoose = require("mongoose");
+const { userRouter } = require("./routes/user")
+const { courseRouter} = require("./routes/course")
+const { adminRouter } = require("./routes/admin")
+//Routing in express, the express Router
 const app = express();
 
-app.post("/user/signup", function(req, res){
-  res.json({
-    message: "signup endpoint"
-  })
-})
+app.use("/api/v1/user", userRouter);
+app.use("/api/v1/admin", courseRouter);
+app.use("/api/v1/course", courseRouter);
 
-app.post("/user/signin",function(req, res){
-  res.json({
-    message: "signin endpoint"
-  })
-})
+async function main() {
+  await mongoose.connect("mongodb+srv://Biplab:QkoxQfk10KLODqtV@cluster0.reix0.mongodb.net/course-app");
+  app.listen(3000); 
+  console.log("listninig on port 3000");
+  
+}
 
-app.get("/course", function(req, res){
-  res.json({
-    message: ""
-  })
-})
+main()
+
